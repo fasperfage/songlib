@@ -18,8 +18,11 @@ public class Controller {
     private Button btn;
 
     @FXML
-    public void onButton(ActionEvent event) {
-    	btn.setText("Hello!");
+    public void onButton(ActionEvent e) {
+    	if (e.getSource() == btn){
+    		btn.setText("Hello!");
+    		return;
+    	}
     }
 
     @FXML
