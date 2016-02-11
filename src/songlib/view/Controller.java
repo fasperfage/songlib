@@ -5,10 +5,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Scanner;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -24,6 +27,8 @@ public class Controller {
 	
 	private boolean editing;
 	private boolean adding;
+	ArrayList<String[]> songArray = new ArrayList<String[]>();
+	ObservableList<String> songs = FXCollections.observableArrayList();
 	
     @FXML
     private ResourceBundle resources;
@@ -45,7 +50,6 @@ public class Controller {
     
     @FXML
     private Label statusBar;
-
 
     @FXML
     private Button doneBtn;
@@ -78,7 +82,7 @@ public class Controller {
     private Label yearLabel;
     
     @FXML
-    public void onButton(ActionEvent e) {	 		
+    public void onButton(ActionEvent e) {
     	
     	if (e.getSource() == addBtn){
     		setStatus( "adding.." );
@@ -136,16 +140,16 @@ public class Controller {
     
     @FXML
     public void addMode ( boolean b ){
-    	if (b == true){
+    	if (b == true){		//if asked to go into add mode
     		if (!editing && !adding ){
     			adding = true;
-    			addBtn.setDisable(true);
+    			
     			fieldsOn(b);
     		}
-    	} else {
+    	} else {	//if asked to exit out of edit mode
     		if (editing || adding ){
     			adding = false;
-    			addBtn.setDisable(false);
+    			
     			fieldsOn(b);
     		}
     	}
@@ -155,60 +159,92 @@ public class Controller {
     @FXML
     public void fieldsOn( boolean b ) {
     	if (b == true ) {
-    		nameLabel.setVisible(false);
+    		nameLabel.setVisible(false);	//make labels invisible
     		artistLabel.setVisible(false);
     		albumLabel.setVisible(false);
     		yearLabel.setVisible(false);
     		
-			nameField.setVisible(true);
+			nameField.setVisible(true);		//make fields visible
     		artistField.setVisible(true);
     		albumField.setVisible(true);
     		yearField.setVisible(true);
     		
-    		nameField.setEditable(true);
+    		nameField.setEditable(true);	//make fields editable
     		artistField.setEditable(true);
     		albumField.setEditable(true);
     		yearField.setEditable(true);
     		
-    		nameField.setDisable(false);
+    		nameField.setDisable(false);	//enable fields
     		artistField.setDisable(false);
     		albumField.setDisable(false);
     		yearField.setDisable(false);
     		
-    		doneBtn.setDisable(false);
+    		addBtn.setDisable(true);		//disable add/del/edit buttons
+    		delBtn.setDisable(true);
+    		editBtn.setDisable(true);
+    		
+    		doneBtn.setDisable(false);		//enable done/cancel buttons
     		cancelBtn.setDisable(false);
+    		
+    		songList.setMouseTransparent( true );	//disable song list
+    		songList.setFocusTraversable( false );
+    		songList.setDisable(true);
+    		
     	} else {
-    		nameLabel.setVisible(true);
+    		nameLabel.setVisible(true);		//make labels visible
     		artistLabel.setVisible(true);
     		albumLabel.setVisible(true);
     		yearLabel.setVisible(true);
 			
-			nameField.setVisible(false);
+			nameField.setVisible(false);	//make fields invisible
     		artistField.setVisible(false);
     		albumField.setVisible(false);
     		yearField.setVisible(false);
 			
-			nameField.setEditable(false);
+			nameField.setEditable(false);	//make fields uneditable
     		artistField.setEditable(false);
     		albumField.setEditable(false);
     		yearField.setEditable(false);
     		
-    		nameField.setDisable(true);
+    		nameField.setDisable(true);		//disable fields
     		artistField.setDisable(true);
     		albumField.setDisable(true);
     		yearField.setDisable(true);
     		
-    		doneBtn.setDisable(true);
+    		addBtn.setDisable(false);		//enable add/del/edit buttons
+    		delBtn.setDisable(false);
+    		editBtn.setDisable(false);
+    		
+    		doneBtn.setDisable(true);		//disable done/cancel buttons
     		cancelBtn.setDisable(true);
+    		
+    		songList.setMouseTransparent( false );	//enable song list
+    		songList.setFocusTraversable( true );
+    		songList.setDisable(false);
     	}
     	return;
     }
 
+    public void setSelected(String title) {
+    	String[] selectedSong;
+    	selectedSong = songArray.get(songs.indexOf(title));
+    	nameLabel.setText(selectedSong[0]);
+    	}
+    
     @FXML
     void initialize() {
     	editing = false;
-    	ObservableList<String> songs = FXCollections.observableArrayList();
-    	String songTitle;
+    	
+    	
+    	songList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>(){	//generate listener for list
+
+			@Override
+			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {	//if list selection changes
+				setStatus("selected: " + newValue);
+
+			}
+    		
+    	});
     	
     	String csvFile = "songs.csv";
     	BufferedReader br = null;
@@ -218,11 +254,11 @@ public class Controller {
     	try {
     		
     		br = new BufferedReader(new FileReader(csvFile));
-    		while ((line = br.readLine()) != null) {
+    		while ((line = br.readLine()) != null) {	//for each song in the song list csv,
 
-    			String[] song = line.split(cvsSplitBy);
-    			songTitle = song[0];
-    			songs.add(songTitle);
+    			String[] song = line.split(cvsSplitBy);	//create array of song details, separated by ","
+    			songArray.add(song);	//add this song (and its details) to song array
+    			songs.add(song[0]);	//add song array entry 0 (song title) to songs list
     		}
     		
     		FXCollections.sort(songs);

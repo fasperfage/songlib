@@ -121,7 +121,7 @@
                   <Insets left="5.0" right="5.0" />
                </GridPane.margin>
             </Label>
-            <ListView fx:id="songList" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.rowSpan="5">
+            <ListView fx:id="songList" onMouseClicked="#onListFocus" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.rowSpan="5">
                <GridPane.margin>
                   <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
                </GridPane.margin>
