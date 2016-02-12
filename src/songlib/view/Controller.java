@@ -46,6 +46,9 @@ public class Controller {
 			this.album = "n/a";
 			this.year = "n/a";
 		}
+	public String toString(){
+		return title + " " + artist + " " + album + " " + year;
+	}
 	}
 	public class songComparator implements Comparator {
 		public int compare(Object o1, Object o2) {
@@ -147,7 +150,7 @@ public class Controller {
     }
     
     @FXML
-    public void setStatus( String status ){
+    public void setStatus( String status ){	//helper method for setting status bar
     	statusBar.setText( status );
     	return;
     }
@@ -258,7 +261,19 @@ public class Controller {
     }
 
     public void setSelected(String title) {
-    	//setStatus("selected index: " + songList.getSelectionModel().getSelectedIndex());
+    	int index = songList.getSelectionModel().getSelectedIndex();
+    	setStatus( (index + 1) + ". " + title);
+    	
+    	nameField.setText(songsArray.get(index).title);		//set fields to selected song
+    	artistField.setText(songsArray.get(index).artist);
+    	albumField.setText(songsArray.get(index).album);
+    	yearField.setText(songsArray.get(index).year);
+    	
+    	nameLabel.setText(songsArray.get(index).title);		//set labels to selected song
+    	artistLabel.setText(songsArray.get(index).artist);
+    	albumLabel.setText(songsArray.get(index).album);
+    	yearLabel.setText(songsArray.get(index).year);
+    	
     	return;
 	}
     
@@ -271,7 +286,7 @@ public class Controller {
 			@Override
 			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {	//if list selection changes
 				//setStatus("selected: " + newValue);
-				//setSelected(newValue);
+				setSelected(newValue);
 			}
     	});
     	
@@ -284,19 +299,17 @@ public class Controller {
     		
     		br = new BufferedReader(new FileReader(csvFile));
     		while ((line = br.readLine()) != null) {	//for each song in the song list csv,
-    			String[] songDetails = {"","","",""};
-    			songDetails = line.split(csvSplitBy);	//create array of song details, separated by ","
+    			String[] songDetails;
+    			songDetails = line.split(csvSplitBy, -1);	//create array of song details, separated by ","
     			
     			songObject newSongObject = new songObject(songDetails[0], songDetails[1]);	//make new songObject object
-    			if (songDetails[2]!=""){
+    			
+    			if (!songDetails[2].equals("")){
     				newSongObject.album = songDetails[2];
-    			}else{
-    				newSongObject.album = "n/a";
     			}
-    			if (songDetails[3]!=""){
+    			
+    			if (!songDetails[3].equals("")){
     				newSongObject.year = songDetails[3];
-    			}else{
-    				newSongObject.year = "n/a";
     			}
     			
     			songsArray.add(newSongObject);	//add this song (and its details) to song array
@@ -308,6 +321,8 @@ public class Controller {
     		songList.setItems(songTitles);
     		
     		setStatus("done reading song list!");
+    		
+    		songList.getSelectionModel().select(0);
     		
 
     	} catch (FileNotFoundException e) {
