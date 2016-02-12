@@ -33,7 +33,7 @@ import javafx.scene.control.TextField;
 
 public class Controller {
 	
-	class songObject 
+	class songObject 	//custom object for each song
 	{
 		String title;
 		String artist;
@@ -46,19 +46,30 @@ public class Controller {
 			this.album = "n/a";
 			this.year = "n/a";
 		}
-	public String toString(){
-		return title + " " + artist + " " + album + " " + year;
-	}
-	}
-	public class songComparator implements Comparator {
-		public int compare(Object o1, Object o2) {
-			songObject song1 = (songObject) o1;
-			songObject song2 = (songObject) o2;
-			return song1.title.compareTo(song2.title);
-					
+		
+		public String toString(){		//toString override
+			return title + " " + artist + " " + album + " " + year;
 		}
 	}
-	songComparator songComp = new songComparator();
+	public class songComparator implements Comparator<Object> {	//custom comparator for sorting songs based on title
+		public int compare(Object o1, Object o2) {	//defines compare method for songObjects
+			songObject song1 = (songObject) o1;	//should probably check if types are songObject
+			songObject song2 = (songObject) o2;
+			return song1.title.toLowerCase().compareTo(song2.title.toLowerCase());
+		}
+		public boolean equals(Object o1, Object o2){	//defines if two songs are equal
+			songObject song1 = (songObject) o1;	//should probably check if types are songObject
+			songObject song2 = (songObject) o2;
+			if (song1.title.toLowerCase().equals(song2.title.toLowerCase())){	//if song titles are the same
+				if (song1.artist.toLowerCase().equals(song2.artist.toLowerCase())){	//and if song artist is the same
+					return true;	//then the songs are the same
+				}
+			}
+			return false;	//otherwise, they're not the same
+		}
+	}
+	
+	songComparator songComp = new songComparator();		//instance of custom comparator
 	
 	private boolean editing;
 	private boolean adding;
@@ -304,20 +315,19 @@ public class Controller {
     			
     			songObject newSongObject = new songObject(songDetails[0], songDetails[1]);	//make new songObject object
     			
-    			if (!songDetails[2].equals("")){
+    			if (!songDetails[2].equals("")){		//fill in album and year only if it's not empty
     				newSongObject.album = songDetails[2];
     			}
-    			
     			if (!songDetails[3].equals("")){
     				newSongObject.year = songDetails[3];
     			}
     			
     			songsArray.add(newSongObject);	//add this song (and its details) to song array
-    			songTitles.add(newSongObject.title);
+    			songTitles.add(newSongObject.title);	//add this to list of titles (for listview)
     		}
     		
-    		songsArray.sort(songComp);
-    		FXCollections.sort(songTitles);
+    		songsArray.sort(songComp);	//sort array of songs with custom comparator (titles)
+    		FXCollections.sort(songTitles);	//sort list of titles (result should be the same as above)
     		songList.setItems(songTitles);
     		
     		setStatus("done reading song list!");
