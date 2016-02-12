@@ -6,23 +6,19 @@
 package songlib.view;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.ResourceBundle;
-import java.util.Scanner;
-
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -169,13 +165,11 @@ public class Controller {
     	}  	
     }
     
-    @FXML
     public void setStatus( String status ){	//helper method for setting status bar
     	statusBar.setText( status );
     	return;
     }
     
-    @FXML
     public void editMode( boolean b ){
     	if ( b == true){	//if asked to go into edit mode
     		if (!editing && !adding ){
@@ -193,25 +187,42 @@ public class Controller {
     	return;
     }
     
-    @FXML
     public void addMode ( boolean b ){
     	if (b == true){		//if asked to go into add mode
     		if (!editing && !adding ){
     			adding = true;
     			
-    			fieldsOn(b);
+    			fieldsOn(b);	//turn fields on, labels off
     		}
     	} else {	//if asked to exit out of edit mode
     		if (editing || adding ){
     			adding = false;
     			
-    			fieldsOn(b);
+    			fieldsOn(b);	//turn fields off, labels on
     		}
     	}
     	return;
     }
     
-    @FXML
+    public boolean addSong ( songObject song ) {	//adds given song object to list
+    	return true;
+    }
+    
+    public void sortSongs() {	//re-sorts list
+    	songsArray.sort(songComp);	//sort array of songs with custom comparator (sort by titles)
+		for (int i=0;i<songsArray.size();i++){	//add song titles to observableList
+			if (songTitles.contains(songsArray.get(i).title)){
+				songTitles.add(i,songsArray.get(i).title.concat(" "));	//workaround: appends " " to duplicate titles to avoid index mix-up
+			}else{
+				songTitles.add(i,songsArray.get(i).title);
+			}
+		}
+		songList.setItems(songTitles);	//adds titles to songList listview object
+		setStatus("done reading song list!");
+    	
+    	return;
+    }
+    
     public void fieldsOn( boolean b ) {
     	if (b == true ) {
     		nameLabel.setVisible(false);	//make labels invisible
@@ -318,8 +329,8 @@ public class Controller {
     		
     		br = new BufferedReader(new FileReader(csvFile));
     		while ((line = br.readLine()) != null) {	//for each song in the song list csv,
-    			String[] songDetails;
-    			songDetails = line.split(csvSplitBy, -1);	//create array of song details, separated by ","
+    			String[] songDetails;	//for parsing line in csv with song title, artist, album, year
+    			songDetails = line.split(csvSplitBy, -1);	//create array of song details, don't ignore whitespace, separate by "," 
     			
     			songObject newSongObject = new songObject(songDetails[0], songDetails[1]);	//make new songObject object
     			
@@ -333,25 +344,32 @@ public class Controller {
     			songsArray.add(newSongObject);	//add this song (and its details) to song array
     			System.out.println(newSongObject);
     		}
-    		
+    		/*
     		songsArray.sort(songComp);	//sort array of songs with custom comparator (sort by titles)
-    		
     		for (int i=0;i<songsArray.size();i++){	//add song titles to observableList
     			if (songTitles.contains(songsArray.get(i).title)){
-    				songTitles.add(i,songsArray.get(i).title.concat("(1)"));	//appends (1) to duplicate titles to avoid index mixup
+    				songTitles.add(i,songsArray.get(i).title.concat(" "));	//workaround: appends " " to duplicate titles to avoid index mix-up
     			}else{
     				songTitles.add(i,songsArray.get(i).title);
     			}
-    			
     		}
     		songList.setItems(songTitles);	//adds titles to songList listview object
     		setStatus("done reading song list!");
-    		
+    		*/
+    		sortSongs();
     		songList.getSelectionModel().select(0);	//selects first in list by default
     		
 
     	} catch (FileNotFoundException e) {
-    		e.printStackTrace();
+    		File f = new File("songs.csv");	//sets up file
+    		if(!f.exists()) {	//if file doesn't exist, it creates it.
+    		    try {
+					f.createNewFile();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+    		} 
     	} catch (IOException e) {
     		e.printStackTrace();
     	} finally {
