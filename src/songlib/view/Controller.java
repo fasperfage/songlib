@@ -1,3 +1,8 @@
+/*
+ * Calvin Lee, Bartosz Kidacki
+ * Rutgers CS213
+ */
+
 package songlib.view;
 
 import java.io.BufferedReader;
@@ -6,6 +11,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Scanner;
@@ -23,12 +29,38 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 
+
+
 public class Controller {
+	
+	class songObject 
+	{
+		String title;
+		String artist;
+		String album;
+		String year;
+		
+		songObject(String t, String a){
+			this.title = t;
+			this.artist = a;
+			this.album = "n/a";
+			this.year = "n/a";
+		}
+	}
+	public class songComparator implements Comparator {
+		public int compare(Object o1, Object o2) {
+			songObject song1 = (songObject) o1;
+			songObject song2 = (songObject) o2;
+			return song1.title.compareTo(song2.title);
+					
+		}
+	}
+	songComparator songComp = new songComparator();
 	
 	private boolean editing;
 	private boolean adding;
-	ArrayList<String[]> songArray = new ArrayList<String[]>();
-	ObservableList<String> songs = FXCollections.observableArrayList();
+	ArrayList<songObject> songsArray = new ArrayList<songObject>();
+	ObservableList<String> songTitles = FXCollections.observableArrayList();
 	
     @FXML
     private ResourceBundle resources;
@@ -226,43 +258,54 @@ public class Controller {
     }
 
     public void setSelected(String title) {
-    	String[] selectedSong;
-    	selectedSong = songArray.get(songs.indexOf(title));
-    	nameLabel.setText(selectedSong[0]);
-    	}
+    	//setStatus("selected index: " + songList.getSelectionModel().getSelectedIndex());
+    	return;
+	}
     
     @FXML
     void initialize() {
     	editing = false;
-    	
+    	adding = false;
     	
     	songList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>(){	//generate listener for list
-
 			@Override
 			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {	//if list selection changes
-				setStatus("selected: " + newValue);
-
+				//setStatus("selected: " + newValue);
+				//setSelected(newValue);
 			}
-    		
     	});
     	
     	String csvFile = "songs.csv";
     	BufferedReader br = null;
     	String line = "";
-    	String cvsSplitBy = ",";
+    	String csvSplitBy = ",";
 
     	try {
     		
     		br = new BufferedReader(new FileReader(csvFile));
     		while ((line = br.readLine()) != null) {	//for each song in the song list csv,
-
-    			String[] song = line.split(cvsSplitBy);	//create array of song details, separated by ","
-    			songArray.add(song);	//add this song (and its details) to song array
-    			songs.add(song[0]);	//add song array entry 0 (song title) to songs list
+    			String[] songDetails = {"","","",""};
+    			songDetails = line.split(csvSplitBy);	//create array of song details, separated by ","
+    			
+    			songObject newSongObject = new songObject(songDetails[0], songDetails[1]);	//make new songObject object
+    			if (songDetails[2]!=""){
+    				newSongObject.album = songDetails[2];
+    			}else{
+    				newSongObject.album = "n/a";
+    			}
+    			if (songDetails[3]!=""){
+    				newSongObject.year = songDetails[3];
+    			}else{
+    				newSongObject.year = "n/a";
+    			}
+    			
+    			songsArray.add(newSongObject);	//add this song (and its details) to song array
+    			songTitles.add(newSongObject.title);
     		}
     		
-    		FXCollections.sort(songs);
-    		songList.setItems(songs);
+    		songsArray.sort(songComp);
+    		FXCollections.sort(songTitles);
+    		songList.setItems(songTitles);
     		
     		setStatus("done reading song list!");
     		
@@ -279,9 +322,7 @@ public class Controller {
     				e.printStackTrace();
     			}
     		}
-    	}
-
-    	
+    	}	
         assert addBtn != null : "fx:id=\"addBtn\" was not injected: check your FXML file 'Layout.fxml'.";
         assert delBtn != null : "fx:id=\"delBtn\" was not injected: check your FXML file 'Layout.fxml'.";
         assert editBtn != null : "fx:id=\"editBtn\" was not injected: check your FXML file 'Layout.fxml'.";
@@ -297,6 +338,5 @@ public class Controller {
         assert songList != null : "fx:id=\"songList\" was not injected: check your FXML file 'Layout.fxml'.";
         assert doneBtn != null : "fx:id=\"doneBtn\" was not injected: check your FXML file 'Layout.fxml'.";
         assert cancelBtn != null : "fx:id=\"cancelBtn\" was not injected: check your FXML file 'Layout.fxml'.";
-
     }
 }
