@@ -55,7 +55,10 @@ public class Controller {
 		public int compare(Object o1, Object o2) {	//defines compare method for songObjects
 			songObject song1 = (songObject) o1;	//should probably check if types are songObject
 			songObject song2 = (songObject) o2;
-			return song1.title.toLowerCase().compareTo(song2.title.toLowerCase());
+			if (song1.title.toLowerCase().concat(song1.artist.toLowerCase()).equals(song2.title.toLowerCase().concat(song2.artist.toLowerCase()))){
+				return -1;
+			}
+			return song1.title.toLowerCase().concat(song1.artist.toLowerCase()).compareTo(song2.title.toLowerCase().concat(song2.artist.toLowerCase()));
 		}
 		public boolean equals(Object o1, Object o2){	//defines if two songs are equal
 			songObject song1 = (songObject) o1;	//should probably check if types are songObject
@@ -128,7 +131,7 @@ public class Controller {
     private Label yearLabel;
     
     @FXML
-    public void onButton(ActionEvent e) {
+    public void onButton(ActionEvent e) {		//button action function
     	
     	if (e.getSource() == addBtn){
     		setStatus( "adding.." );
@@ -151,11 +154,17 @@ public class Controller {
     		return;
     	}
     	else if (e.getSource() == doneBtn){
-			setStatus( "done!" );
-			if (editing)
+			if (editing){
+				
 				editMode( false );
-			else if (adding)
+			}
+				
+			else if (adding) {
 				addMode( false );
+			}
+				
+			
+			setStatus( "done!" );
     		return;
     	}  	
     }
@@ -293,10 +302,9 @@ public class Controller {
     	editing = false;
     	adding = false;
     	
-    	songList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>(){	//generate listener for list
+    	songList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>(){	//generate listener for listview
 			@Override
 			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {	//if list selection changes
-				//setStatus("selected: " + newValue);
 				setSelected(newValue);
 			}
     	});
@@ -323,16 +331,23 @@ public class Controller {
     			}
     			
     			songsArray.add(newSongObject);	//add this song (and its details) to song array
-    			songTitles.add(newSongObject.title);	//add this to list of titles (for listview)
+    			System.out.println(newSongObject);
     		}
     		
-    		songsArray.sort(songComp);	//sort array of songs with custom comparator (titles)
-    		FXCollections.sort(songTitles);	//sort list of titles (result should be the same as above)
-    		songList.setItems(songTitles);
+    		songsArray.sort(songComp);	//sort array of songs with custom comparator (sort by titles)
     		
+    		for (int i=0;i<songsArray.size();i++){	//add song titles to observableList
+    			if (songTitles.contains(songsArray.get(i).title)){
+    				songTitles.add(i,songsArray.get(i).title.concat("(1)"));	//appends (1) to duplicate titles to avoid index mixup
+    			}else{
+    				songTitles.add(i,songsArray.get(i).title);
+    			}
+    			
+    		}
+    		songList.setItems(songTitles);	//adds titles to songList listview object
     		setStatus("done reading song list!");
     		
-    		songList.getSelectionModel().select(0);
+    		songList.getSelectionModel().select(0);	//selects first in list by default
     		
 
     	} catch (FileNotFoundException e) {
