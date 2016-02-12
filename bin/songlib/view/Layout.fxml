@@ -36,8 +36,8 @@
         </rowConstraints>
          <children>
             <Button fx:id="addBtn" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="add" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-            <Button fx:id="delBtn" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="delete" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
-            <Button fx:id="editBtn" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="edit" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
+            <Button fx:id="delBtn" disable="true" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="delete" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+            <Button fx:id="editBtn" disable="true" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="edit" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER" />
             <Label fx:id="statusBar" maxWidth="1.7976931348623157E308" text="status bar" GridPane.columnIndex="1" GridPane.columnSpan="6" GridPane.halignment="CENTER" GridPane.rowIndex="6" GridPane.valignment="CENTER">
                <GridPane.margin>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
@@ -121,7 +121,7 @@
                   <Insets left="5.0" right="5.0" />
                </GridPane.margin>
             </Label>
-            <ListView fx:id="songList" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.rowSpan="5">
+           <ListView fx:id="songList" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.rowSpan="5">
                <GridPane.margin>
                   <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
                </GridPane.margin>
@@ -130,7 +130,7 @@
                </padding>
             </ListView>
             <Button fx:id="doneBtn" disable="true" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="done" GridPane.columnIndex="6" GridPane.halignment="CENTER" GridPane.rowIndex="5" GridPane.valignment="TOP" />
-            <Button fx:id="cancelBtn" disable="true" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="cancel" GridPane.columnIndex="7" GridPane.halignment="CENTER" GridPane.rowIndex="5" GridPane.valignment="TOP" />
+            <Button fx:id="cancelBtn" cancelButton="true" disable="true" mnemonicParsing="false" onAction="#onButton" prefHeight="50.0" prefWidth="100.0" text="cancel" GridPane.columnIndex="7" GridPane.halignment="CENTER" GridPane.rowIndex="5" GridPane.valignment="TOP" />
          </children>
       </GridPane>
    </children>

@@ -1,3 +1,7 @@
+/*
+ * Written by Calvin Lee and Bartosz Kidacki
+ */
+
 package songlib.app;
 	
 import java.io.IOException;

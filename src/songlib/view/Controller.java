@@ -1,79 +1,38 @@
 /*
- * Calvin Lee, Bartosz Kidacki
- * Rutgers CS213
+ * Written by Calvin Lee and Bartosz Kidacki
  */
 
 package songlib.view;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Scanner;
+
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-
-
+import songlib.app.Song;
 
 public class Controller {
 	
-	class songObject 	//custom object for each song
-	{
-		String title;
-		String artist;
-		String album;
-		String year;
-		
-		songObject(String t, String a){
-			this.title = t;
-			this.artist = a;
-			this.album = "n/a";
-			this.year = "n/a";
-		}
-		
-		public String toString(){		//toString override
-			return title + " " + artist + " " + album + " " + year;
-		}
-	}
-	public class songComparator implements Comparator<Object> {	//custom comparator for sorting songs based on title
-		public int compare(Object o1, Object o2) {	//defines compare method for songObjects
-			songObject song1 = (songObject) o1;	//should probably check if types are songObject
-			songObject song2 = (songObject) o2;
-			if (song1.title.toLowerCase().concat(song1.artist.toLowerCase()).equals(song2.title.toLowerCase().concat(song2.artist.toLowerCase()))){
-				return -1;
-			}
-			return song1.title.toLowerCase().concat(song1.artist.toLowerCase()).compareTo(song2.title.toLowerCase().concat(song2.artist.toLowerCase()));
-		}
-		public boolean equals(Object o1, Object o2){	//defines if two songs are equal
-			songObject song1 = (songObject) o1;	//should probably check if types are songObject
-			songObject song2 = (songObject) o2;
-			if (song1.title.toLowerCase().equals(song2.title.toLowerCase())){	//if song titles are the same
-				if (song1.artist.toLowerCase().equals(song2.artist.toLowerCase())){	//and if song artist is the same
-					return true;	//then the songs are the same
-				}
-			}
-			return false;	//otherwise, they're not the same
-		}
-	}
-	
-	songComparator songComp = new songComparator();		//instance of custom comparator
-	
 	private boolean editing;
 	private boolean adding;
-	ArrayList<songObject> songsArray = new ArrayList<songObject>();
-	ObservableList<String> songTitles = FXCollections.observableArrayList();
+	private Song selectedSong;
+	ObservableList<Song> songs = FXCollections.observableArrayList();
 	
     @FXML
     private ResourceBundle resources;
@@ -91,7 +50,7 @@ public class Controller {
     private Button editBtn;
 
     @FXML
-    private ListView<String> songList;
+    private ListView<Song> songList;
     
     @FXML
     private Label statusBar;
@@ -127,7 +86,7 @@ public class Controller {
     private Label yearLabel;
     
     @FXML
-    public void onButton(ActionEvent e) {		//button action function
+    public void onButton(ActionEvent e) {
     	
     	if (e.getSource() == addBtn){
     		setStatus( "adding.." );
@@ -136,6 +95,22 @@ public class Controller {
     	}
     	else if (e.getSource() == delBtn){
     		setStatus( "deleted!" );
+    		int deletedIndex = songList.getSelectionModel().getSelectedIndex();
+    		
+			nameLabel.setText(null);
+			artistLabel.setText(null);
+			yearLabel.setText(null);
+			albumLabel.setText(null);
+			songs.remove(selectedSong);
+			if(songs.size() == 0) {
+				editBtn.setDisable(true);
+				delBtn.setDisable(true);
+			}
+			save();
+			if ( ! (deletedIndex == songs.size()) ){
+				songList.getSelectionModel().selectNext();
+			}
+			
     		return;
     	}
     	else if (e.getSource() == editBtn){
@@ -150,31 +125,79 @@ public class Controller {
     		return;
     	}
     	else if (e.getSource() == doneBtn){
-			if (editing){
-				
-				editMode( false );
-			}
-				
-			else if (adding) {
-				addMode( false );
-			}
-				
-			
 			setStatus( "done!" );
+
+			if (editing) {
+				String name = nameField.getText();
+				String artist= artistField.getText();
+
+				if (name!=null&& !name.isEmpty()&& artist!=null && !artist.isEmpty()){
+					Song song = new Song(nameField.getText(), artistField.getText(),
+							albumField.getText(), yearField.getText());
+
+					if((!song.getName().equals(selectedSong.getName()) || !song.getArtist().equals(selectedSong.getArtist()))
+							&& isDuplicate(song))
+					{
+						setStatus("song with this name and artist already exists!");
+					}
+					else {
+						songs.remove(selectedSong);
+						songs.add(song);
+						FXCollections.sort(songs);
+						songList.getSelectionModel().select(song);
+						editMode( false );
+						save();
+					}
+
+				}
+				else {
+					// name or artist is empty
+					setStatus( "name and artist cannot be empty" );
+				}
+			}
+			else if (adding) {
+				String name = nameField.getText();
+				String artist = artistField.getText();
+
+				if(name != null && !name.isEmpty() && artist != null && !artist.isEmpty()) {
+					Song song = new Song(nameField.getText(), artistField.getText(),
+							albumField.getText(), yearField.getText());
+					if(isDuplicate(song)) {
+						setStatus("song with this name and artist already exists!");
+					}
+					else {
+						songs.add(song);
+						FXCollections.sort(songs);
+						songList.getSelectionModel().select(song);
+						addMode(false);
+						save();
+					}
+				}
+				else {
+					// name or artist is empty
+					setStatus("name and artist cannot be empty");
+				}
+			}
     		return;
     	}  	
     }
     
-    public void setStatus( String status ){	//helper method for setting status bar
+    @FXML
+    public void setStatus( String status ){
     	statusBar.setText( status );
     	return;
     }
     
+    @FXML
     public void editMode( boolean b ){
     	if ( b == true){	//if asked to go into edit mode
     		if (!editing && !adding ){
 	    		editing = true;
 	    		editBtn.setDisable(true);
+				nameField.setText(selectedSong.getName());
+				artistField.setText(selectedSong.getArtist());
+				albumField.setText(selectedSong.getAlbum());
+				yearField.setText(selectedSong.getYear());
 	    		fieldsOn(b);
     		}    		
     	} else {	//if asked to exit out of edit mode
@@ -187,42 +210,28 @@ public class Controller {
     	return;
     }
     
+    @FXML
     public void addMode ( boolean b ){
     	if (b == true){		//if asked to go into add mode
     		if (!editing && !adding ){
     			adding = true;
-    			
-    			fieldsOn(b);	//turn fields on, labels off
+				nameField.setText(null);
+				artistField.setText(null);
+				albumField.setText(null);
+				yearField.setText(null);
+    			fieldsOn(b);
     		}
     	} else {	//if asked to exit out of edit mode
     		if (editing || adding ){
     			adding = false;
     			
-    			fieldsOn(b);	//turn fields off, labels on
+    			fieldsOn(b);
     		}
     	}
     	return;
     }
     
-    public boolean addSong ( songObject song ) {	//adds given song object to list
-    	return true;
-    }
-    
-    public void sortSongs() {	//re-sorts list
-    	songsArray.sort(songComp);	//sort array of songs with custom comparator (sort by titles)
-		for (int i=0;i<songsArray.size();i++){	//add song titles to observableList
-			if (songTitles.contains(songsArray.get(i).title)){
-				songTitles.add(i,songsArray.get(i).title.concat(" "));	//workaround: appends " " to duplicate titles to avoid index mix-up
-			}else{
-				songTitles.add(i,songsArray.get(i).title);
-			}
-		}
-		songList.setItems(songTitles);	//adds titles to songList listview object
-		setStatus("done reading song list!");
-    	
-    	return;
-    }
-    
+    @FXML
     public void fieldsOn( boolean b ) {
     	if (b == true ) {
     		nameLabel.setVisible(false);	//make labels invisible
@@ -251,6 +260,8 @@ public class Controller {
     		
     		doneBtn.setDisable(false);		//enable done/cancel buttons
     		cancelBtn.setDisable(false);
+    		doneBtn.setDefaultButton(true);
+    		cancelBtn.setCancelButton(true);
     		
     		songList.setMouseTransparent( true );	//disable song list
     		songList.setFocusTraversable( false );
@@ -283,6 +294,8 @@ public class Controller {
     		
     		doneBtn.setDisable(true);		//disable done/cancel buttons
     		cancelBtn.setDisable(true);
+    		doneBtn.setDefaultButton(false);
+    		cancelBtn.setCancelButton(false);
     		
     		songList.setMouseTransparent( false );	//enable song list
     		songList.setFocusTraversable( true );
@@ -291,85 +304,84 @@ public class Controller {
     	return;
     }
 
-    public void setSelected(String title) {
-    	int index = songList.getSelectionModel().getSelectedIndex();
-    	setStatus( (index + 1) + ". " + title);
-    	
-    	nameField.setText(songsArray.get(index).title);		//set fields to selected song
-    	artistField.setText(songsArray.get(index).artist);
-    	albumField.setText(songsArray.get(index).album);
-    	yearField.setText(songsArray.get(index).year);
-    	
-    	nameLabel.setText(songsArray.get(index).title);		//set labels to selected song
-    	artistLabel.setText(songsArray.get(index).artist);
-    	albumLabel.setText(songsArray.get(index).album);
-    	yearLabel.setText(songsArray.get(index).year);
-    	
-    	return;
+	public void setSelected(Song song) {
+		if(song != null) {
+			selectedSong = song;
+			nameLabel.setText(selectedSong.getName());
+			artistLabel.setText(selectedSong.getArtist());
+			albumLabel.setText(selectedSong.getAlbum());
+			yearLabel.setText(selectedSong.getYear());
+			nameField.setText(selectedSong.getName());
+			artistField.setText(selectedSong.getArtist());
+			albumField.setText(selectedSong.getAlbum());
+			yearField.setText(selectedSong.getYear());
+			editBtn.setDisable(false);
+			delBtn.setDisable(false);
+		}
 	}
-    
+
+	public boolean isDuplicate(Song newSong) {
+		for(Song song : songs) {
+			if(song.equals(newSong)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
     @FXML
     void initialize() {
     	editing = false;
-    	adding = false;
     	
-    	songList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>(){	//generate listener for listview
+    	nameLabel.setText(null);
+		artistLabel.setText(null);
+		yearLabel.setText(null);
+		albumLabel.setText(null);
+    	
+    	songList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Song>(){	//generate listener for list
 			@Override
-			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {	//if list selection changes
+			public void changed(ObservableValue<? extends Song> observable, Song oldValue, Song newValue) {	//if list selection changes
 				setSelected(newValue);
+				setStatus("selected: " + newValue);
 			}
     	});
-    	
+    	File f = new File("songs.csv");
+		if (!f.exists()){
+			try {
+				f.createNewFile();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}
     	String csvFile = "songs.csv";
     	BufferedReader br = null;
     	String line = "";
-    	String csvSplitBy = ",";
+    	String cvsSplitBy = ",";
 
     	try {
     		
     		br = new BufferedReader(new FileReader(csvFile));
     		while ((line = br.readLine()) != null) {	//for each song in the song list csv,
-    			String[] songDetails;	//for parsing line in csv with song title, artist, album, year
-    			songDetails = line.split(csvSplitBy, -1);	//create array of song details, don't ignore whitespace, separate by "," 
-    			
-    			songObject newSongObject = new songObject(songDetails[0], songDetails[1]);	//make new songObject object
-    			
-    			if (!songDetails[2].equals("")){		//fill in album and year only if it's not empty
-    				newSongObject.album = songDetails[2];
-    			}
-    			if (!songDetails[3].equals("")){
-    				newSongObject.year = songDetails[3];
-    			}
-    			
-    			songsArray.add(newSongObject);	//add this song (and its details) to song array
-    			System.out.println(newSongObject);
+				String[] songDetails = new String[4];
+				String[] temp = line.split(cvsSplitBy);	//create array of song details, separated by ","
+
+				for(int i = 0; i < temp.length; i++) {
+					songDetails[i] = temp[i];
+				}
+
+				Song song = new Song(songDetails[0], songDetails[1], songDetails[2], songDetails[3]);
+    			songs.add(song);	//add song array entry 0 (song title) to songs list
     		}
-    		/*
-    		songsArray.sort(songComp);	//sort array of songs with custom comparator (sort by titles)
-    		for (int i=0;i<songsArray.size();i++){	//add song titles to observableList
-    			if (songTitles.contains(songsArray.get(i).title)){
-    				songTitles.add(i,songsArray.get(i).title.concat(" "));	//workaround: appends " " to duplicate titles to avoid index mix-up
-    			}else{
-    				songTitles.add(i,songsArray.get(i).title);
-    			}
-    		}
-    		songList.setItems(songTitles);	//adds titles to songList listview object
+    		
+    		FXCollections.sort(songs);
+    		songList.setItems(songs);
+    		
     		setStatus("done reading song list!");
-    		*/
-    		sortSongs();
-    		songList.getSelectionModel().select(0);	//selects first in list by default
     		
 
     	} catch (FileNotFoundException e) {
-    		File f = new File("songs.csv");	//sets up file
-    		if(!f.exists()) {	//if file doesn't exist, it creates it.
-    		    try {
-					f.createNewFile();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-    		} 
+    		e.printStackTrace();
     	} catch (IOException e) {
     		e.printStackTrace();
     	} finally {
@@ -380,7 +392,9 @@ public class Controller {
     				e.printStackTrace();
     			}
     		}
-    	}	
+    	}
+
+    	
         assert addBtn != null : "fx:id=\"addBtn\" was not injected: check your FXML file 'Layout.fxml'.";
         assert delBtn != null : "fx:id=\"delBtn\" was not injected: check your FXML file 'Layout.fxml'.";
         assert editBtn != null : "fx:id=\"editBtn\" was not injected: check your FXML file 'Layout.fxml'.";
@@ -396,5 +410,47 @@ public class Controller {
         assert songList != null : "fx:id=\"songList\" was not injected: check your FXML file 'Layout.fxml'.";
         assert doneBtn != null : "fx:id=\"doneBtn\" was not injected: check your FXML file 'Layout.fxml'.";
         assert cancelBtn != null : "fx:id=\"cancelBtn\" was not injected: check your FXML file 'Layout.fxml'.";
+
     }
+
+	public void save() {
+		String csvFile = "songs.csv";
+		BufferedWriter writer = null;
+		try
+		{
+			writer = new BufferedWriter(new FileWriter(csvFile));
+
+
+			for(int i = 0; i < songs.size(); i++) {
+				Song song = songs.get(i);
+				String album = song.getAlbum();
+				String year = song.getYear();
+
+				if(album == null) {
+					album = "";
+				}
+
+				if(year == null) {
+					year = "";
+				}
+
+				writer.write(song.getName() + "," + song.getArtist() + "," + album + "," + year + "\n" );
+			}
+		}
+		catch ( IOException e)
+		{
+		}
+		finally
+		{
+			try
+			{
+				if ( writer != null)
+					writer.close( );
+			}
+			catch ( IOException e)
+			{
+			}
+		}
+	}
+
 }
